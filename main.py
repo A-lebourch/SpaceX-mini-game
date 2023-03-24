@@ -1,14 +1,7 @@
 from pyb import SPI, Pin, LED, delay, UART, Timer
 import random
-
-CS = Pin("PE3", Pin.OUT_PP)
-SPI_1 = SPI(
-    1,  # PA5, PA6, PA7
-    SPI.MASTER,
-    baudrate=50000,
-    polarity=0,
-    phase=0,  
-)
+import time
+from logo import *
 
 def led1(timer):
     LED(1).toggle()
@@ -22,14 +15,6 @@ def led3(timer):
 def led4(timer):
     LED(4).toggle()
 
-time_time = Timer(4, freq=2)
-
-ennemy_pos = []
-
-uart = UART(2, 115200)
-
-push_button = Pin("PA0", Pin.IN,Pin.PULL_DOWN)
-
 def clear_screen():
     uart.write("\x1b[2J\x1b[?25l")
 
@@ -42,13 +27,7 @@ def read_reg(addr):
     tab_values = SPI_1.recv(1) 
     CS.high()
     return tab_values[0]
-  
-def write_reg(addr, value):
-    CS.low()
-    SPI_1.send(addr & 0x7F)  
-    SPI_1.send(value)
-    CS.high()
-    
+
 def convert_value(high, low):
     value = (high << 8) | low
     if value & (1 << 15):
@@ -60,106 +39,6 @@ def read_acceleration(base_addr):
     high = read_reg(base_addr + 1)
     return convert_value(high, low)
 
-def blink_led():
-    time_time.callback(led1)
-    time_time.callback(led2)
-    time_time.callback(led3)
-    time_time.callback(led4)
-
-    
-
-#/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-logo_spacex = """\
-   ▄████████    ▄███████▄    ▄████████  ▄████████    ▄████████      ▀████    ▐████▀ 
-  ███    ███   ███    ███   ███    ███ ███    ███   ███    ███        ███▌   ████▀  
-  ███    █▀    ███    ███   ███    ███ ███    █▀    ███    █▀          ███  ▐███    
-  ███          ███    ███   ███    ███ ███         ▄███▄▄▄             ▀███▄███▀    
-▀███████████ ▀█████████▀  ▀███████████ ███        ▀▀███▀▀▀             ████▀██▄     
-         ███   ███          ███    ███ ███    █▄    ███    █▄         ▐███  ▀███    
-   ▄█    ███   ███          ███    ███ ███    ███   ███    ███       ▄███     ███▄  
- ▄████████▀   ▄████▀        ███    █▀  ████████▀    ██████████      ████       ███▄ 
-                                                                                    
-    """
-
-logo_arrow = """\
-           ▄    
-          ▐░▌   
-           ▐░▌  
-            ▐░▌ 
- ▄▄▄▄▄▄▄▄▄▄▄ ▐░▌
-▐░░░░░░░░░░░▌▐░▌
- ▀▀▀▀▀▀▀▀▀▀▀ ▐░▌
-            ▐░▌ 
-           ▐░▌  
-          ▐░▌   
-           ▀    
-    """
-
-logo_win = """\
-▄██   ▄    ▄██████▄  ███    █▄        ▄█     █▄   ▄█  ███▄▄▄▄   
-███   ██▄ ███    ███ ███    ███      ███     ███ ███  ███▀▀▀██▄ 
-███▄▄▄███ ███    ███ ███    ███      ███     ███ ███▌ ███   ███ 
-▀▀▀▀▀▀███ ███    ███ ███    ███      ███     ███ ███▌ ███   ███ 
-▄██   ███ ███    ███ ███    ███      ███     ███ ███▌ ███   ███ 
-███   ███ ███    ███ ███    ███      ███     ███ ███  ███   ███ 
-███   ███ ███    ███ ███    ███      ███ ▄█▄ ███ ███  ███   ███ 
- ▀█████▀   ▀██████▀  ████████▀        ▀███▀███▀  █▀    ▀█   █▀  
-                                                                
-    """
-logo_play = """\
-  _____  _             
- |  __ \| |            
- | |__) | | __ _ _   _ 
- |  ___/| |/ _` | | | |
- | |    | | (_| | |_| |
- |_|    |_|\__,_|\__, |
-                  __/ |
-                 |___/ 
-    """
-
-logo_score = """\
-   _____                    
-  / ____|                   
- | (___   ___ ___  _ __ ___ 
-  \___ \ / __/ _ \| '__/ _ \ 
-  ____) | (_| (_) | | |  __/
- |_____/ \___\___/|_|  \___|
-                            
-                            
-    """
-logo_score_big = """\
-   ▄████████  ▄████████  ▄██████▄     ▄████████    ▄████████ 
-  ███    ███ ███    ███ ███    ███   ███    ███   ███    ███ 
-  ███    █▀  ███    █▀  ███    ███   ███    ███   ███    █▀  
-  ███        ███        ███    ███  ▄███▄▄▄▄██▀  ▄███▄▄▄     
-▀███████████ ███        ███    ███ ▀▀███▀▀▀▀▀   ▀▀███▀▀▀     
-         ███ ███    █▄  ███    ███ ▀███████████   ███    █▄  
-   ▄█    ███ ███    ███ ███    ███   ███    ███   ███    ███ 
- ▄████████▀  ████████▀   ▀██████▀    ███    ███   ██████████ 
-                                     ███    ███              
-    """
-
-logo_back = """\
-  ____             _    
- |  _ \           | |   
- | |_) | __ _  ___| | __
- |  _ < / _` |/ __| |/ /
- | |_) | (_| | (__|   < 
- |____/ \__,_|\___|_|\_\ 
-                        
-                            
-    """
-logo_points ="""\
-           _                 ___  _____ _____         _       
-     /\   | |            _  |__ \| ____| ____|       | |      
-    /  \  | | _____  __ (_)    ) | |__ | |__    _ __ | |_ ___ 
-   / /\ \ | |/ _ \ \/ /       / /|___ \|___ \  | '_ \| __/ __|
-  / ____ \| |  __/>  <   _   / /_ ___) |___) | | |_) | |_\__ \ 
- /_/    \_\_|\___/_/\_\ (_) |____|____/|____/  | .__/ \__|___/
-                                               | |            
-                                               |_|            
-    """
 def draw_logo(logo:str, x, y):
     lines = logo.splitlines()
     for index, line in enumerate(lines) :
@@ -182,7 +61,7 @@ def boundaries (boundaries_x, boundaries_y):
 
 def shooting (curseur_x, curseur_y, entry, ennemy_pos):
     if entry == 1 :
-        for rocket_pos in range(7, 150):
+        for rocket_pos in range(7, 175):
             rocket = [curseur_x + rocket_pos, curseur_y + 1]
             move(rocket[0], rocket[1])
             uart.write("🔴")
@@ -190,7 +69,11 @@ def shooting (curseur_x, curseur_y, entry, ennemy_pos):
             move(rocket[0]-1, rocket[1])
             uart.write(" ")
             rocket_hit_test(ennemy_pos, rocket)
-
+            if rocket[0] == 175:
+                move(rocket[0], rocket[1])
+                uart.write(" ")
+                break
+            
 def rocket_hit_test (ennemy_pos, rocket):
 
     for ennemy_x , ennemy_y in ennemy_pos:
@@ -198,7 +81,7 @@ def rocket_hit_test (ennemy_pos, rocket):
             if rocket == [ennemy_x, ennemy_y + y_offset] :     
                 move(ennemy_x, ennemy_y)
                 uart.write(" \n\b \n\b ")
-                blink_led()
+                # blink_led()
                 ennemy_pos.remove([ennemy_x, ennemy_y])
                 spawn_ennemy()
                 life_bar(150, True)
@@ -219,7 +102,6 @@ def menu(btn):
     while (True):
         
         y_accel = read_acceleration(0x2A)
-        print(y_accel)
 
         if y_accel > 300:
             draw_logo(logo_arrow,x=80, y=42)
@@ -232,7 +114,7 @@ def menu(btn):
                 draw_logo(logo_arrow,x=80, y=30)
                    
         
-        if y_accel < -300:
+        if y_accel < 0:
             draw_logo(logo_arrow,x=80, y=30)
             clear_logo(logo_arrow, x=80, y=42)
             if btn.value() == 1:
@@ -256,6 +138,7 @@ def life_bar (life_lenght, hit = False):
     green_char = "🟩"   #🟩 is two char 
     red_char = "🟥"
     one_life_width = 30
+
     if start :
         for pixels in range(0,life_lenght,2):
             move(pixels,2)
@@ -264,70 +147,120 @@ def life_bar (life_lenght, hit = False):
 
     if hit  :
         number_hit += 1
-        move(life_lenght - number_hit * one_life_width, 2)
+        move(life_lenght - number_hit * one_life_width + 1, 2)
         uart.write(15*red_char)
-        print(number_hit)
     
     if number_hit == 5 :
+        blink()
+        restarting()
+
+def restarting ():
+    for i in range(2):
         clear_screen()
-        draw_logo(logo_win,x=50,y=25)          
+        draw_logo(logo_win,x=50,y=25) 
+        draw_logo(logo_restarting_1,96,35)
+        time.sleep(1)
+        clear_screen()
+        draw_logo(logo_win,x=50,y=25) 
+        draw_logo(logo_restarting_2,96,35)
+        time.sleep(1)
+        clear_screen()
+        draw_logo(logo_win,x=50,y=25) 
+        draw_logo(logo_restarting_3,96,35)
+        time.sleep(1)
+
+def blink():
+    t1 = Timer(1, freq=8)
+    t2 = Timer(2, freq=10)
+    t3 = Timer(3, freq=12)
+    t4 = Timer(4, freq=14)
+    t1.callback(led1)
+    t2.callback(led2)
+    t3.callback(led3)
+    t4.callback(led4)
+    time.sleep(2)
+    t1.deinit()
+    t2.deinit()
+    t3.deinit()
+    t4.deinit()
+    LED(1).off()
+    LED(2).off()
+    LED(3).off()
+    LED(4).off()
 
 #/////////////////////////////////////////////////////////////////////////////////////////////////////////::                   
 
-clear_screen()
+CS = Pin("PE3", Pin.OUT_PP)
+SPI_1 = SPI(
+    1, 
+    SPI.MASTER,
+    baudrate=50000,
+    polarity=0,
+    phase=0,  
+)
 
-number_hit = 0
-curseur_x = 20
-curseur_y = 10
-previous_pos_x = curseur_x
-previous_pos_y = curseur_y
-boundaries_x = [4,150]
-boundaries_y = [4,50]
-start = True
+ennemy_pos = []
 
-# menu(push_button)
+uart = UART(2, 115200)
 
-boundaries(boundaries_x, boundaries_y)
-spawn_ennemy()
-life_bar(150)
+push_button = Pin("PA0", Pin.IN,Pin.PULL_DOWN)
+
+addr_who_am_i = 0x0F
+addr_ctrl_reg4 = 0x20
 
 while True:
 
-    x_accel = read_acceleration(0x28)
-    y_accel = read_acceleration(0x2A)
-    z_accel = read_acceleration(0x2C)
-    
-    delay(50)
-        
-    if x_accel < +300:
-        curseur_x += 1
-        if curseur_x > boundaries_x[1]:
-            curseur_x -= 1
-    
-    if x_accel > -300:
-        curseur_x -= 1
-        if curseur_x < boundaries_x[0]:
+    number_hit = 0
+    curseur_x = 20
+    curseur_y = 10
+    previous_pos_x = curseur_x
+    previous_pos_y = curseur_y
+    boundaries_x = [4,150]
+    boundaries_y = [4,50]
+    start = True
+    gaming =True
+    first_display = True
+    clear_screen()
+    menu(push_button)
+    boundaries(boundaries_x, boundaries_y)
+    spawn_ennemy()
+    life_bar(150)
+
+    while(number_hit != 5):
+
+        x_accel = read_acceleration(0x28)
+        y_accel = read_acceleration(0x2A)
+        z_accel = read_acceleration(0x2C)
+
+        delay(50)
+            
+        if x_accel < 300:
             curseur_x += 1
+            if curseur_x > boundaries_x[1]:
+                curseur_x -= 1
         
-    if y_accel > 300:
-        curseur_y += 1
-        if curseur_y > boundaries_y[1]:
-            curseur_y -= 1
-        
-    if y_accel < -300:
-        curseur_y -= 1
-        if curseur_y < boundaries_y[0]:
+        if x_accel > -300:
+            curseur_x -= 1
+            if curseur_x < boundaries_x[0]+1:
+                curseur_x += 1
+            
+        if y_accel > 300:
             curseur_y += 1
-    
-    print(y_accel)
-    print(x_accel)
+            if curseur_y > boundaries_y[1]:
+                curseur_y -= 1
+            
+        if y_accel < -300:
+            curseur_y -= 1
+            if curseur_y < boundaries_y[0]+1:
+                curseur_y += 1
 
-    if curseur_x != previous_pos_x or curseur_y != previous_pos_y :
-        move(previous_pos_x, previous_pos_y)
-        uart.write("    \n\b\b\b    \n\b\b\b\b\b    ")
-        previous_pos_x = curseur_x
-        previous_pos_y = curseur_y
-        move(curseur_x, curseur_y)
-        uart.write("🔥◣\n\b\b\b🔥███\n\b\b\b\b\b🔥◤")
+        if curseur_x != previous_pos_x or curseur_y != previous_pos_y or first_display == True:
+            move(previous_pos_x, previous_pos_y)
+            uart.write("    \n\b\b\b    \n\b\b\b\b\b    ")
+            previous_pos_x = curseur_x
+            previous_pos_y = curseur_y
+            move(curseur_x, curseur_y)
+            uart.write("🔥◣\n\b\b\b🔥███\n\b\b\b\b\b🔥◤")
+            first_display = False
 
-    shooting(curseur_x, curseur_y, push_button.value(), ennemy_pos)
+        shooting(curseur_x, curseur_y, push_button.value(), ennemy_pos)
