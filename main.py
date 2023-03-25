@@ -3,41 +3,27 @@ import random
 import time
 from logo import *
 
-def led1(timer):
+def leds(timer):
     LED(1).toggle()
-
-def led2(timer):
     LED(2).toggle()
-
-def led3(timer):
     LED(3).toggle()
-
-def led4(timer):
     LED(4).toggle()
+
+def blink():
+    t = Timer(1, freq=8)
+    t.callback(leds)
+    time.sleep(2)
+    t.deinit()
+    LED(1).off()
+    LED(2).off()
+    LED(3).off()
+    LED(4).off()
 
 def clear_screen():
     uart.write("\x1b[2J\x1b[?25l")
 
 def move(x, y):
     uart.write("\x1b[{};{}H".format(y, x))
-
-def read_reg(addr):
-    CS.low()
-    SPI_1.send(addr | 0x80) 
-    tab_values = SPI_1.recv(1) 
-    CS.high()
-    return tab_values[0]
-
-def convert_value(high, low):
-    value = (high << 8) | low
-    if value & (1 << 15):
-        value = value - (1 << 16)
-    return value * 0.06
-    
-def read_acceleration(base_addr):
-    low = read_reg(base_addr)
-    high = read_reg(base_addr + 1)
-    return convert_value(high, low)
 
 def draw_logo(logo:str, x, y):
     lines = logo.splitlines()
@@ -58,6 +44,46 @@ def boundaries (boundaries_x, boundaries_y):
     for i in range(*boundaries_y):
         move(boundaries_y[0], i)
         uart.write("|")
+
+def life_bar (life_lenght, hit = False):
+    global start
+    global number_hit
+    green_char = "🟩"   #🟩 is two char 
+    red_char = "🟥"
+    one_life_width = 30
+
+    if start :
+        for pixels in range(0,life_lenght,2):
+            move(pixels,2)
+            uart.write(green_char)
+        start = False
+
+    if hit  :
+        number_hit += 1
+        move(life_lenght - number_hit * one_life_width + 1, 2)
+        uart.write(15*red_char)
+    
+    if number_hit == 5 :
+        blink()
+        restarting()
+
+def read_reg(addr):
+    CS.low()
+    SPI_1.send(addr | 0x80) 
+    tab_values = SPI_1.recv(1) 
+    CS.high()
+    return tab_values[0]
+
+def convert_value(high, low):
+    value = (high << 8) | low
+    if value & (1 << 15):
+        value = value - (1 << 16)
+    return value * 0.06
+    
+def read_acceleration(base_addr):
+    low = read_reg(base_addr)
+    high = read_reg(base_addr + 1)
+    return convert_value(high, low)
 
 def shooting (curseur_x, curseur_y, entry, ennemy_pos):
     if entry == 1 :
@@ -80,8 +106,7 @@ def rocket_hit_test (ennemy_pos, rocket):
         for y_offset in range(3):
             if rocket == [ennemy_x, ennemy_y + y_offset] :     
                 move(ennemy_x, ennemy_y)
-                uart.write(" \n\b \n\b ")
-                # blink_led()
+                clear_logo(ennemy)
                 ennemy_pos.remove([ennemy_x, ennemy_y])
                 spawn_ennemy()
                 life_bar(150, True)
@@ -91,7 +116,7 @@ def spawn_ennemy ():
     y = random.randrange(5,50)
     ennemy_pos.append([x, y])
     move(x, y)
-    uart.write("❌\n\b\b❌\n\b\b❌")
+    draw_logo(ennemy)
 
 def menu(btn):
     clear_screen()
@@ -132,28 +157,6 @@ def score(btn):
             clear_screen()
             break
 
-def life_bar (life_lenght, hit = False):
-    global start
-    global number_hit
-    green_char = "🟩"   #🟩 is two char 
-    red_char = "🟥"
-    one_life_width = 30
-
-    if start :
-        for pixels in range(0,life_lenght,2):
-            move(pixels,2)
-            uart.write(green_char)
-        start = False
-
-    if hit  :
-        number_hit += 1
-        move(life_lenght - number_hit * one_life_width + 1, 2)
-        uart.write(15*red_char)
-    
-    if number_hit == 5 :
-        blink()
-        restarting()
-
 def restarting ():
     for i in range(2):
         clear_screen()
@@ -169,47 +172,24 @@ def restarting ():
         draw_logo(logo_restarting_3,96,35)
         time.sleep(1)
 
-def blink():
-    t1 = Timer(1, freq=8)
-    t2 = Timer(2, freq=10)
-    t3 = Timer(3, freq=12)
-    t4 = Timer(4, freq=14)
-    t1.callback(led1)
-    t2.callback(led2)
-    t3.callback(led3)
-    t4.callback(led4)
-    time.sleep(2)
-    t1.deinit()
-    t2.deinit()
-    t3.deinit()
-    t4.deinit()
-    LED(1).off()
-    LED(2).off()
-    LED(3).off()
-    LED(4).off()
-
 #/////////////////////////////////////////////////////////////////////////////////////////////////////////::                   
 
-CS = Pin("PE3", Pin.OUT_PP)
-SPI_1 = SPI(
-    1, 
+CS = Pin("PE3", Pin.OUT_PP)     #SPI init
+SPI_1 = SPI(                    #SPI init
+    1,                          
     SPI.MASTER,
     baudrate=50000,
     polarity=0,
     phase=0,  
 )
-
-ennemy_pos = []
-
 uart = UART(2, 115200)
-
 push_button = Pin("PA0", Pin.IN,Pin.PULL_DOWN)
-
 addr_who_am_i = 0x0F
 addr_ctrl_reg4 = 0x20
 
 while True:
 
+    ennemy_pos = []
     number_hit = 0
     curseur_x = 20
     curseur_y = 10
@@ -256,11 +236,11 @@ while True:
 
         if curseur_x != previous_pos_x or curseur_y != previous_pos_y or first_display == True:
             move(previous_pos_x, previous_pos_y)
-            uart.write("    \n\b\b\b    \n\b\b\b\b\b    ")
+            clear_logo(player)
             previous_pos_x = curseur_x
             previous_pos_y = curseur_y
             move(curseur_x, curseur_y)
-            uart.write("🔥◣\n\b\b\b🔥███\n\b\b\b\b\b🔥◤")
+            draw_logo(player)
             first_display = False
 
         shooting(curseur_x, curseur_y, push_button.value(), ennemy_pos)
