@@ -3,6 +3,7 @@ import random
 import time
 from logo import *
 
+# LEDS init #
 def leds(timer):
     LED(1).toggle()
     LED(2).toggle()
@@ -18,7 +19,9 @@ def blink():
     LED(2).off()
     LED(3).off()
     LED(4).off()
+#/////////////#
 
+# Screen init #
 def clear_screen():
     uart.write("\x1b[2J\x1b[?25l")
 
@@ -44,11 +47,39 @@ def boundaries (boundaries_x, boundaries_y):
     for i in range(*boundaries_y):
         move(boundaries_y[0], i)
         uart.write("|")
+#/////////////#
 
+# accelerometer functions #
+def read_reg(addr):
+    CS.low()
+    SPI_1.send(addr | 0x80) 
+    tab_values = SPI_1.recv(1) 
+    CS.high()
+    return tab_values[0]
+
+def write_reg(addr, value):
+    CS.low()
+    SPI_1.send(addr & 0x7F) 
+    SPI_1.send(value)
+    CS.high()
+
+def convert_value(high, low):
+    value = (high << 8) | low
+    if value & (1 << 15):
+        value = value - (1 << 16)
+    return value * 0.06
+    
+def read_acceleration(base_addr):
+    low = read_reg(base_addr)
+    high = read_reg(base_addr + 1)
+    return convert_value(high, low)
+#/////////////#
+
+# Game functions #
 def life_bar (life_lenght, hit = False):
     global start
     global number_hit
-    green_char = "🟩"   #🟩 is two char 
+    green_char = "🟩"
     red_char = "🟥"
     one_life_width = 30
 
@@ -66,30 +97,6 @@ def life_bar (life_lenght, hit = False):
     if number_hit == 5 :
         blink()
         restarting()
-
-def read_reg(addr):
-    CS.low()
-    SPI_1.send(addr | 0x80) 
-    tab_values = SPI_1.recv(1) 
-    CS.high()
-    return tab_values[0]
-
-def write_reg(addr, value):
-    CS.low()
-    SPI_1.send(addr & 0x7F)  # write
-    SPI_1.send(value)
-    CS.high()
-
-def convert_value(high, low):
-    value = (high << 8) | low
-    if value & (1 << 15):
-        value = value - (1 << 16)
-    return value * 0.06
-    
-def read_acceleration(base_addr):
-    low = read_reg(base_addr)
-    high = read_reg(base_addr + 1)
-    return convert_value(high, low)
 
 def shooting (curseur_x, curseur_y, entry, ennemy_pos):
     if entry == 1 :
@@ -175,11 +182,11 @@ def restarting ():
         draw_logo(logo_win,x=50,y=25) 
         draw_logo(logo_restarting_3,96,35)
         time.sleep(1)
+#/////////////#                
 
-#/////////////////////////////////////////////////////////////////////////////////////////////////////////::                   
-
-CS = Pin("PE3", Pin.OUT_PP)     #SPI init
-SPI_1 = SPI(                    #SPI init
+# SPI UART Button init #
+CS = Pin("PE3", Pin.OUT_PP)     
+SPI_1 = SPI(                    
     1,                          
     SPI.MASTER,
     baudrate=50000,
@@ -190,7 +197,9 @@ uart = UART(2, 115200)
 push_button = Pin("PA0", Pin.IN,Pin.PULL_DOWN)
 addr_ctrl_reg4 = 0x20
 write_reg(addr_ctrl_reg4, 0x77)
+#/////////////#
 
+# THE GAME #
 while True:
 
     ennemy_pos = []
@@ -202,7 +211,6 @@ while True:
     boundaries_x = [4,150]
     boundaries_y = [4,50]
     start = True
-    gaming =True
     first_display = True
     clear_screen()
     menu(push_button)
@@ -246,3 +254,4 @@ while True:
             first_display = False
 
         shooting(curseur_x, curseur_y, push_button.value(), ennemy_pos)
+#/////////////#
