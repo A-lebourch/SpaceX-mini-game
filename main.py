@@ -1,7 +1,9 @@
+# IMPORTS #
 from pyb import SPI, Pin, LED, delay, UART, Timer
 import random
 import time
 from logo import *
+#/////////////#
 
 # LEDS init #
 def leds(timer):
@@ -201,7 +203,7 @@ write_reg(addr_ctrl_reg4, 0x77)
 
 # THE GAME #
 while True:
-
+    # GAME SETUP#
     ennemy_pos = []
     number_hit = 0
     curseur_x = 20
@@ -212,11 +214,15 @@ while True:
     boundaries_y = [4,50]
     start = True
     first_display = True
+    #/////////////#
+
+    # game start #
     clear_screen()
     menu(push_button)
     boundaries(boundaries_x, boundaries_y)
     spawn_ennemy()
     life_bar(150)
+    #/////////////#
 
     while(number_hit != 5):
 
