@@ -74,6 +74,12 @@ def read_reg(addr):
     CS.high()
     return tab_values[0]
 
+def write_reg(addr, value):
+    CS.low()
+    SPI_1.send(addr & 0x7F)  # write
+    SPI_1.send(value)
+    CS.high()
+
 def convert_value(high, low):
     value = (high << 8) | low
     if value & (1 << 15):
@@ -105,8 +111,7 @@ def rocket_hit_test (ennemy_pos, rocket):
     for ennemy_x , ennemy_y in ennemy_pos:
         for y_offset in range(3):
             if rocket == [ennemy_x, ennemy_y + y_offset] :     
-                move(ennemy_x, ennemy_y)
-                clear_logo(ennemy)
+                clear_logo(ennemy, ennemy_x, ennemy_y)
                 ennemy_pos.remove([ennemy_x, ennemy_y])
                 spawn_ennemy()
                 life_bar(150, True)
@@ -115,8 +120,7 @@ def spawn_ennemy ():
     x = random.randrange(100,175)
     y = random.randrange(5,50)
     ennemy_pos.append([x, y])
-    move(x, y)
-    draw_logo(ennemy)
+    draw_logo(ennemy, x, y)
 
 def menu(btn):
     clear_screen()
@@ -184,8 +188,8 @@ SPI_1 = SPI(                    #SPI init
 )
 uart = UART(2, 115200)
 push_button = Pin("PA0", Pin.IN,Pin.PULL_DOWN)
-addr_who_am_i = 0x0F
 addr_ctrl_reg4 = 0x20
+write_reg(addr_ctrl_reg4, 0x77)
 
 while True:
 
@@ -235,12 +239,10 @@ while True:
                 curseur_y += 1
 
         if curseur_x != previous_pos_x or curseur_y != previous_pos_y or first_display == True:
-            move(previous_pos_x, previous_pos_y)
-            clear_logo(player)
+            clear_logo(player, previous_pos_x, previous_pos_y)
             previous_pos_x = curseur_x
             previous_pos_y = curseur_y
-            move(curseur_x, curseur_y)
-            draw_logo(player)
+            draw_logo(player, curseur_x, curseur_y)
             first_display = False
 
         shooting(curseur_x, curseur_y, push_button.value(), ennemy_pos)
